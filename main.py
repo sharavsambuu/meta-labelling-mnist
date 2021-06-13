@@ -95,7 +95,7 @@ model.fit(
     y               = Y_train,
     validation_data = (X_val, Y_val),
     epochs          = 3,
-    batch_size      = 320
+    batch_size      = 512
 )
 
 #%%
@@ -182,7 +182,7 @@ meta_model.compile(
 meta_model.fit(
     x          = new_features      ,
     y          = meta_label_encoded,
-    epochs     = 4,
+    epochs     = 12,
     batch_size = 32
     )
 
@@ -225,7 +225,7 @@ def test_meta_label(primary_model, secondary_model, x, y, threshold):
 
 
 #%%
-print("##### Сургасан өгөгдөл дээрхи гүйцэтгэл #####\n\n")
+print("\n\n\n##### Сургасан өгөгдөл дээрхи гүйцэтгэл #####\n")
 test_meta_label(
     primary_model   = model, 
     secondary_model = meta_model, 
@@ -235,7 +235,7 @@ test_meta_label(
     )
 
 #%%
-print("##### Бататгах өгөгдөл дээрхи гүйцэтгэл ##### \n\n")
+print("\n\n\n##### Бататгах өгөгдөл дээрхи гүйцэтгэл ##### \n")
 test_meta_label(
     primary_model   = model, 
     secondary_model = meta_model, 
@@ -246,7 +246,7 @@ test_meta_label(
 
 
 #%%
-print("##### Сургалтаас гадуурхи өгөгдөл дээрхи гүйцэтгэл ##### \n\n")
+print("\n\n\n##### Сургалтаас гадуурхи өгөгдөл дээрхи гүйцэтгэл ##### \n")
 x_test_flat        = x_sub_test.flatten().reshape(x_sub_test.shape[0], 28*28)
 y_sub_test_encoded = tf.keras.utils.to_categorical(
     [1 if value == num_3 else 0 for value in y_sub_test]
@@ -259,6 +259,8 @@ test_meta_label(
     y               = y_sub_test_encoded, 
     threshold       = threshold
     )  
+
+print("\n\n")
 
 #%%
 
