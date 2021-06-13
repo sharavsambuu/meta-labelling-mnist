@@ -124,10 +124,22 @@ actual     = np.array([i[1] for i in Y_train   ])
 
 
 #%%
+# Босго утгаар анхны модель нь хэр өндөр recall-тай байх вэ
+# гэдгийг тодорхойлдог. Эндээс 0.30 босго бол хамгийн сайн
+# утга гэдгийг харж болно. ROC муруй нь аль босго хамгийн 
+# сайн түвшин бэ гэдгийг тодорхойлоход хэрэгтэй.
 plot_roc(actual, prediction)
 
-#%%
 
+#%%
+threshold      = 0.30
+prediction_int = np.array(prediction) > threshold
+
+print(metrics.classification_report(actual, prediction_int))
+
+cm = metrics.confusion_matrix(actual, prediction_int)
+print("Confusion matrix")
+print(cm)
 
 
 #%%
