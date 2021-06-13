@@ -132,6 +132,17 @@ plot_roc(actual, prediction)
 
 
 #%%
+threshold      = 0.10
+prediction_int = np.array(prediction) > threshold
+
+print(metrics.classification_report(actual, prediction_int))
+
+cm = metrics.confusion_matrix(actual, prediction_int)
+print("Confusion matrix")
+print(cm)
+
+
+#%%
 threshold      = 0.30
 prediction_int = np.array(prediction) > threshold
 
@@ -141,6 +152,113 @@ cm = metrics.confusion_matrix(actual, prediction_int)
 print("Confusion matrix")
 print(cm)
 
+
+#%%
+actual, prediction_int
+
+#%%
+# Meta модель сургахад бэлтгэх
+meta_labels        = (prediction_int.astype(int) & actual.astype(int)).astype(float)
+meta_label_encoded = tf.keras.utils.to_categorical(meta_labels)
+
+prediction_int = prediction_int.reshape((-1, 1))
+
+# MNIST data + forecast_int
+new_features = np.concatenate((prediction_int, X_train), axis=1)
+
+
+#%%
+meta_model = tf.keras.Sequential()
+meta_model.add(tf.keras.layers.Dense(units=32, activation='relu'   ))
+meta_model.add(tf.keras.layers.Dense(units=2 , activation='softmax'))
+
+meta_model.compile(
+    loss      = 'categorical_crossentropy',
+    optimizer = 'adam',
+    metrics   = ['accuracy']
+)
+
+#%%
+meta_model.fit(
+    x          = new_features      ,
+    y          = meta_label_encoded,
+    epochs     = 4,
+    batch_size = 32
+    )
+
+
+#%%
+def test_meta_label(primary_model, secondary_model, x, y, threshold):
+    # Primary model
+    actual = np.array([i[1] for i in y]) == 1
+
+    primary_prediction     = primary_model.predict(x)
+    primary_prediction     = np.array([i[1] for i in primary_prediction]).reshape((-1, 1))
+    primary_prediction_int = primary_prediction > threshold # binary labels
+
+    print('Анхдагч моделийн гүйцэтгэл:')
+    print(metrics.classification_report(actual, primary_prediction > 0.50))
+    print('Confusion Matrix')
+    print(metrics.confusion_matrix(actual, primary_prediction_int))
+    accuracy = (actual == primary_prediction_int.flatten()).sum() / actual.shape[0]
+    print('Нарийвчлал: ', round(accuracy, 4))
+    print('')
+
+
+    # Secondary model
+    new_features = np.concatenate((primary_prediction_int, x), axis=1)
+
+    meta_prediction     = secondary_model.predict(new_features)
+    meta_prediction     = np.array([i[1] for i in meta_prediction])
+    meta_prediction_int = meta_prediction > 0.5 # binary labels
+
+    # Now combine primary and secondary model in a final prediction
+    final_prediction = (meta_prediction_int & primary_prediction_int.flatten())
+
+    print('Мета моделийн гүйцэтгэл: ')
+    print(metrics.classification_report(actual, final_prediction))
+    print('Confusion Matrix')
+    print(metrics.confusion_matrix(actual, final_prediction))
+    accuracy = (actual == final_prediction).sum() / actual.shape[0]
+    print('Нарийвчлал: ', round(accuracy, 4))
+
+
+
+#%%
+print("##### Сургасан өгөгдөл дээрхи гүйцэтгэл #####\n\n")
+test_meta_label(
+    primary_model   = model, 
+    secondary_model = meta_model, 
+    x               = X_train, 
+    y               = Y_train, 
+    threshold       = threshold
+    )
+
+#%%
+print("##### Бататгах өгөгдөл дээрхи гүйцэтгэл ##### \n\n")
+test_meta_label(
+    primary_model   = model, 
+    secondary_model = meta_model, 
+    x               = X_val, 
+    y               = Y_val, 
+    threshold       = threshold
+    )
+
+
+#%%
+print("##### Сургалтаас гадуурхи өгөгдөл дээрхи гүйцэтгэл ##### \n\n")
+x_test_flat        = x_sub_test.flatten().reshape(x_sub_test.shape[0], 28*28)
+y_sub_test_encoded = tf.keras.utils.to_categorical(
+    [1 if value == num_3 else 0 for value in y_sub_test]
+    )
+
+test_meta_label(
+    primary_model   = model, 
+    secondary_model = meta_model, 
+    x               = x_test_flat, 
+    y               = y_sub_test_encoded, 
+    threshold       = threshold
+    )  
 
 #%%
 
